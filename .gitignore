@@ -4,3 +4,4 @@ config.json
 command_cache.json
 cache
 tmp
+package-lock.json

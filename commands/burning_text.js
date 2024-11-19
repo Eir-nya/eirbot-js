@@ -51,7 +51,7 @@ module.exports = new Command({
 		try {
 			as_json = JSON.parse(as_text);
 		} catch (e) {
-			console.log(e);
+			console.error(e);
 			// Throw error
 			await interaction.editReply({
 				"embeds": [

@@ -40,7 +40,7 @@ module.exports = new Command({
 		console.log(users_who_reacted.at(user_id)); // undefined
 		*/
 
-		await interaction.reply("Superpong!");
+		await interaction.reply("Superpong");
 	},
 	guild_ids: [ "294341563683831819" ],
 });
