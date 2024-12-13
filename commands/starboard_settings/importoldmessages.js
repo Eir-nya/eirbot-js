@@ -43,6 +43,7 @@ module.exports = new Command({
 		let added_message_count = 0;
 
 		// For each message...
+		const awaiting_operations = [];
 		messages.each(message => {
 			if (!message.embeds.length || message.embeds[message.embeds.length - 1].title != "Jump to message")
 				return;
@@ -50,17 +51,23 @@ module.exports = new Command({
 			const original_message_key = message.embeds[message.embeds.length - 1].url.split(`https://discord.com/channels/${interaction.guild.id}/`)[1];
 
 			// Webhook
-			if (message.webhookId == our_webhook) {
+			if (message.webhookId == our_webhook.id) {
 				// Update message ids
 				new_webhook_jump_messages[original_message_key] = message.id;
-				channel.messages.fetch({ cache: false, limit: 1, before: message.id })
-					.then(message_before => new_messages[original_message_key] = message_before.id);
+				awaiting_operations.push(new Promise(resolve =>
+					channel.messages.fetch({ cache: false, limit: 1, before: message.id })
+						.then(message_before => {
+							new_messages[original_message_key] = message_before.first().id;
+							resolve();
+						}),
+				));
 			// Not webhook
 			} else
 				new_messages[original_message_key] = message.id;
 
 			added_message_count++;
 		});
+		await Promise.all(awaiting_operations);
 
 		await starboard.set_setting(interaction.guild, "message_lookup", new_messages);
 		await starboard.set_setting(interaction.guild, "webhook_jump_message_lookup", new_webhook_jump_messages);
