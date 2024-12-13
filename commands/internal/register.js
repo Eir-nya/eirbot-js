@@ -69,6 +69,7 @@ function add_subcommands_recursive(folder, depth) {
 	const parent = root_command || root_subcommand_group;
 
 	const is_command = depth == 0;
+	console.log("[REGISTERING]", `${"-".repeat(get_basename(folder).length - get_basename(folder).replaceAll("/", "").length)}` + get_basename(folder));
 	const subcommand_group = require(_grouppath);
 	// If parent folder is immediately inside commands, ie. commands/test, type should be SlashCommandBuilder instead
 	if (subcommand_group.data instanceof (is_command ? SlashCommandBuilder : SlashCommandSubcommandGroupBuilder)) {
@@ -95,6 +96,7 @@ function add_subcommands_recursive(folder, depth) {
 				console.error(`Nested subcommand groups can not go more than 1 layer deep. Offending subcommand group: "${path.join(folder, fdirent.name)}"`);
 		// Otherwise, add as subcommand
 		} else {
+			console.log("[REGISTERING]", `${"-".repeat(get_basename(fpath).length - get_basename(fpath).replaceAll("/", "").length)}` + get_basename(fpath).split(".js")[0]);
 			const subcommand = require(fpath);
 			if (subcommand.data instanceof SlashCommandSubcommandBuilder) {
 				subcommands[get_basename(fpath).split(".js")[0]] = subcommand;

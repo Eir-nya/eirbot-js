@@ -7,8 +7,8 @@ const starboard = require.main.require("./modules/starboard");
 
 module.exports = new Command({
 	data: new SlashCommandSubcommandBuilder()
-		.setName("settings")
-		.setDescription("View starboard config."),
+		.setName("view")
+		.setDescription("View starboard settings."),
 	interaction: async (/** @type ChatInputCommandInteraction */ interaction) => {
 		await interaction.deferReply({ "ephemeral": true });
 

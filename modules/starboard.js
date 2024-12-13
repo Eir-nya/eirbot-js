@@ -128,13 +128,14 @@ async function get_message_in_starboard(/** @type Message */ message) {
 	const server_settings = get_settings(server);
 
 	const starboard_channel = await get_starboard_channel(server);
-	const target_message = server_settings.message_lookup[message.id];
+	const message_key = `${message.channel.id}/${message.id}`;
+	const target_message = server_settings.message_lookup[message_key];
 	if (starboard_channel && target_message) {
 		try {
 			return await starboard_channel.messages.fetch(target_message);
 		} catch (e) {
 			console.error(`Error while fetching starboard message for ${message.id}:\n${e}`);
-			delete server_settings.message_lookup[message.id];
+			delete server_settings.message_lookup[message_key];
 			set_setting(server, "message_lookup", server_manager.message_lookup);
 			return null;
 		}
@@ -146,13 +147,14 @@ async function get_jump_message_in_starboard(/** @type Message */ message) {
 	const server_settings = get_settings(server);
 
 	const starboard_channel = await get_starboard_channel(server);
-	const target_message = server_settings.webhook_jump_message_lookup[message.id];
+	const message_key = `${message.channel.id}/${message.id}`;
+	const target_message = server_settings.webhook_jump_message_lookup[message_key];
 	if (starboard_channel && target_message) {
 		try {
 			return await starboard_channel.messages.fetch(target_message);
 		} catch (e) {
 			console.error(`Error while fetching starboard jump message for ${message.id}:\n${e}`);
-			delete server_settings.webhook_jump_message_lookup[message.id];
+			delete server_settings.webhook_jump_message_lookup[message_key];
 			set_setting(server, "webhook_jump_message_lookup", server_manager.webhook_jump_message_lookup);
 			return null;
 		}
@@ -182,6 +184,7 @@ async function handle_message(client, channel, message) {
 	if (message.partial && (!message.author || !message.channel || !message.guild))
 		await message.fetch();
 	const message_deleted = message.deleted;
+	const message_key = `${message.channel.id}/${message.id}`;
 
 	// See if message already exists in starboard
 	let message_in_starboard = await get_message_in_starboard(message);
@@ -200,14 +203,14 @@ async function handle_message(client, channel, message) {
 			await message_in_starboard.delete();
 			message_in_starboard = null;
 
-			delete server_settings.message_lookup[message.id];
+			delete server_settings.message_lookup[message_key];
 			set_setting(message.guild, "message_lookup", server_settings.message_lookup);
-			delete server_settings.webhook_jump_message_lookup[message.id];
+			delete server_settings.webhook_jump_message_lookup[message_key];
 			set_setting(message.guild, "webhook_jump_message_lookup", server_settings.webhook_jump_message_lookup);
 		// Was not sent by webhook
 		} else if (!was_sent_by_webhook && (server_settings.use_webhook || message_deleted_should_delete)) {
 			await message_in_starboard.delete();
-			delete server_settings.message_lookup[message.id];
+			delete server_settings.message_lookup[message_key];
 			set_setting(message.guild, "message_lookup", server_settings.message_lookup);
 		}
 
@@ -222,13 +225,13 @@ async function handle_message(client, channel, message) {
 		// Delete because fallen below threshold
 		if (total_stars < server_settings.min_stars && server_settings.remove_when_unstarred) {
 			await message_in_starboard.delete();
-			delete server_settings.message_lookup[message.id];
+			delete server_settings.message_lookup[message_key];
 			set_setting(message.guild, "message_lookup", server_settings.message_lookup);
 
 			const jump_message = await get_jump_message_in_starboard(message);
 			if (jump_message) {
 				await jump_message.delete();
-				delete server_settings.webhook_jump_message_lookup[message.id];
+				delete server_settings.webhook_jump_message_lookup[message_key];
 				set_setting(message.guild, "webhook_jump_message_lookup", server_settings.webhook_jump_message_lookup);
 			}
 		// Edit
@@ -257,9 +260,9 @@ async function handle_message(client, channel, message) {
 			await starboard_channel.send(starboard_message_builder);
 		}
 
-		server_settings.message_lookup[message.id] = message_in_starboard.id;
+		server_settings.message_lookup[message_key] = message_in_starboard.id;
 		if (jump_message)
-			server_settings.webhook_jump_message_lookup[message.id] = jump_message.id;
+			server_settings.webhook_jump_message_lookup[message_key] = jump_message.id;
 
 		set_setting(channel.guild, "message_lookup", server_settings.message_lookup);
 		set_setting(channel.guild, "webhook_jump_message_lookup", server_settings.webhook_jump_message_lookup);
