@@ -294,7 +294,7 @@ async function create_starboard_message(client, message, new_message) {
 	/** @type MessageCreateOptions */
 	const message_out = {
 		"content": attachment_string,
-		"embeds": message.embeds.filter(embed => !embed.url || !attachment_string.contains(embed.url)),
+		"embeds": message.embeds.filter(embed => !embed.url || !attachment_string.includes(embed.url)),
 	};
 	if (new_message && files.length > 0)
 		message_out.files = files;
@@ -349,7 +349,7 @@ async function create_starboard_message_webhook(client, message, new_message) {
 	/** @type WebhookMessageCreateOptions */
 	const message_out = {
 		"content": attachment_string,
-		"embeds": message.embeds.filter(embed => !embed.url || !attachment_string.contains(embed.url)),
+		"embeds": message.embeds.filter(embed => !embed.url || !attachment_string.includes(embed.url)),
 	};
 	if (new_message && files.length > 0)
 		message_out.files = files;
