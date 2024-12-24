@@ -31,6 +31,7 @@ module.exports = new Command({
 
 		const response = await fetch(text_url, {
 			"body": text_format.replace("{0}", interaction.options.getString("text")),
+			"agent": https_agent,
 			"headers": {
 				"content-type": "application/x-www-form-urlencoded",
 			},
