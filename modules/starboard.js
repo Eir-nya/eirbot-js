@@ -2,7 +2,7 @@
  * @import { Message, TextChannel, Guild, MessageCreateOptions, AttachmentBuilder, WebhookMessageCreateOptions, Client, Webhook } from "discord.js"
  */
 const { PermissionsBitField, EmbedBuilder } = require("discord.js");
-const fetch = require("node-fetch");
+const { request } = require("undici");
 const server_manager = require("./server_manager");
 const webhook = require("./webhook");
 const { get_self_as_server_member } = require.main.require("./util/convenience");
@@ -281,7 +281,7 @@ async function create_starboard_message(client, message, new_message) {
 
 	const has_stickers = message.stickers.size > 0;
 	const has_non_guild_sticker = has_stickers && (message.stickers.first().guildId != message.guild.id || !message.stickers.first().guildId);
-	let { attachment_string, files } = await handle_attachments(client, message, new_message, false);
+	let { attachment_string, files } = await handle_attachments(message, new_message, false);
 
 	if (has_non_guild_sticker) {
 		let to_add = "\n" + message.stickers.first().url;
@@ -296,7 +296,7 @@ async function create_starboard_message(client, message, new_message) {
 		"content": attachment_string,
 		"embeds": message.embeds.filter(embed => !embed.url || !attachment_string.includes(embed.url)),
 	};
-	if (new_message && files.length > 0)
+	if (new_message && files.length)
 		message_out.files = files;
 	if (has_stickers && !has_non_guild_sticker)
 		message_out.stickers = [ message.stickers.first() ];
@@ -337,7 +337,7 @@ async function create_starboard_message(client, message, new_message) {
 async function create_starboard_message_webhook(client, message, new_message) {
 	const has_sticker_and_files = message.stickers.size > 0 && message.attachments.size > 0;
 
-	let { attachment_string, files } = await handle_attachments(client, message, new_message, true);
+	let { attachment_string, files } = await handle_attachments(message, new_message, true);
 	if (has_sticker_and_files) {
 		let to_add = "\n" + message.stickers.first().url;
 		if (attachment_string.length + to_add.length > 2000 - 10)
@@ -357,7 +357,7 @@ async function create_starboard_message_webhook(client, message, new_message) {
 		message_out.files = message_out.files || [];
 		const sticker = message.stickers.first();
 		message_out.files.push(/** @type AttachmentBuilder */ {
-			attachment: await fetch(sticker.url).body, // await client.rest.get(sticker.url),
+			attachment: await request(sticker.url).body,
 			description: sticker.description,
 			name: message,
 			spoiler: sticker.name,
@@ -460,26 +460,25 @@ async function update_starboard_jump_message(client, message, jump_message, hook
 
 /**
  * Parses original message's attachments and converts them to 1. a string that will embed them, and 2. a list of files to reupload manually, based on options
- * @param {Client} client
  * @param {Message} original_message
  * @param {bool} download_files
  * @param {bool} read_content
  * @returns {{attachment_string: string, files: [AttachmentBuilder]}}
  */
-async function handle_attachments(client, original_message, download_files, read_content) {
+async function handle_attachments(original_message, download_files, read_content) {
 	/** @type string */
 	let attachment_string = read_content ? original_message.content : "";
-	const files = {};
+	const files = [];
 
 	original_message.attachments.each(attachment => {
 		// Download
 		if (attachment.size <= max_file_size && download_files) {
-			files[attachment.name] = {
-				attachment: attachment.url,
+			files.push({
+				attachment: attachment.proxyURL,
 				description: attachment.description,
 				name: attachment.name,
 				spoiler: attachment.spoiler,
-			};
+			});
 		} else
 			if (!attachment.spoiler)
 				attachment_string += attachment.url + "\n";
@@ -488,7 +487,7 @@ async function handle_attachments(client, original_message, download_files, read
 	});
 
 	// Fetch stream for all files
-	await Promise.all(Object.values(files).map(file => async () => file.attachment = await fetch(file.attachment).body)); // await client.rest.get(file.attachment)));
+	await Promise.all(Object.values(files).map(async file => await request(file.attachment)));
 
 	attachment_string = attachment_string.trim();
 	return {
