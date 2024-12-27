@@ -1,7 +1,7 @@
 /**
  * @import { ChatInputCommandInteraction, TextChannel } from "discord.js";
  */
-const fetch = require("node-fetch");
+const { fetch } = require("undici");
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { Command } = require.main.require("./commands/internal/class");
 
@@ -29,7 +29,7 @@ module.exports = new Command({
 				"embeds": [
 					new EmbedBuilder()
 						.setAuthor({ "name": "Inspirobot", "url": inspirobot_url, "iconURL": inspirobot_icon_url })
-						.setDescription(`An error occured while fetching image.\n${response.status}: ${response.statusText}`)
+						.setDescription(`An error occured while fetching image.\n${response.status}: ${response.statusText}`),
 				],
 			});
 		}
